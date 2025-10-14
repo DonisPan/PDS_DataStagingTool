@@ -24,8 +24,7 @@ public class Tool {
         String bio = faker.yoda().quote();
 
         return String.format("""
-                        INSERT INTO users ( username, full_name, email, bio )
-                            VALUES ( '%s', '%s', '%s', '%s' );
+                        INSERT INTO users ( username, full_name, email, bio ) VALUES ( '%s', '%s', '%s', '%s' );
                         """,
                 escape(baseUsername),
                 escape(fullName),
@@ -37,13 +36,11 @@ public class Tool {
         String body = faker.lorem().paragraph();
         if (replyTo == 0) {
             return String.format("""
-                    INSERT INTO posts ( author_id, body )
-                        VALUES ( %d, '%s' );
+                    INSERT INTO posts ( author_id, body ) VALUES ( %d, '%s' );
                     """, authorId, escape(body));
         } else {
             return String.format("""
-                    INSERT INTO posts ( author_id, body, reply_to_id )
-                        VALUES ( %d, '%s', %d );
+                    INSERT INTO posts ( author_id, body, reply_to_id ) VALUES ( %d, '%s', %d );
                     """, authorId, escape(body), replyTo);
         }
     }
@@ -64,8 +61,7 @@ public class Tool {
         }
 
         return String.format("""
-                        INSERT INTO media ( post_id, mime_type, caption )
-                            VALUES ( %d, '%s', '%s' );
+                        INSERT INTO media ( post_id, mime_type, caption ) VALUES ( %d, '%s', '%s' );
                         """,
                 postId,
                 escape(mimeType),
@@ -73,59 +69,56 @@ public class Tool {
     }
 
     public static String generateReactionInsert(int userId, int postId) {
-        String[] types = {"like", "reply", "share"};
+        String[] types = {"like", "love", "smile", "cry", "share"};
         String type = types[random.nextInt(types.length)];
 
         return String.format("""
-                        INSERT INTO reactions ( user_id, post_id, type )
-                            VALUES ( %d, %d, '%s' );
+                        INSERT INTO reactions ( user_id, post_id, type ) VALUES ( %d, %d, '%s' );
                         """,
                 userId,
                 postId,
                 type);
     }
 
-    private static final String[] baseTags = {
-            "love", "instagood", "photooftheday", "fashion", "beautiful",
-            "happy", "cute", "tbt", "followme", "picoftheday",
-            "selfie", "summer", "swag", "fun", "smile", "omg",
-            "motivation", "fitness", "travel", "life", "vibes"
-    };
-
     private static String randomHashtag() {
-        // 50/50 chance of using a base tag or a generated word
-        String tag = random.nextBoolean()
-                ? baseTags[random.nextInt(baseTags.length)]
-                : faker.lorem().word().replaceAll("[^a-zA-Z]", "");
+        StringBuilder tag = new StringBuilder("#");
 
-        // randomly add prefix like “monday” or “daily”
-        if (random.nextDouble() < 0.3) {
-            String prefix = faker.lorem().word().replaceAll("[^a-zA-Z]", "");
-            tag = prefix.toLowerCase() + tag.substring(0, 1).toUpperCase() + tag.substring(1);
+        switch (random.nextInt(8)) { // pick random theme
+            case 0 -> tag.append(faker.chuckNorris().fact().split(" ")[0]);
+            case 1 -> tag.append(faker.superhero().name().replaceAll("\\s+", ""));
+            case 2 -> tag.append(faker.animal().name().replaceAll("\\s+", ""));
+            case 3 -> tag.append(faker.beer().name().replaceAll("\\s+", ""));
+            case 4 -> tag.append(faker.programmingLanguage().name().replaceAll("\\s+", ""));
+            case 5 -> tag.append(faker.space().planet().replaceAll("\\s+", ""));
+            case 6 -> tag.append(faker.music().genre().replaceAll("\\s+", ""));
+            default -> tag.append(faker.food().dish().replaceAll("\\s+", ""));
         }
 
-        return "#" + tag.toLowerCase();
+        // randomly add a “mood” or “energy” suffix
+        if (random.nextDouble() < 0.3) {
+            String mood = faker.expression("#{word.noun}").replaceAll("[^a-zA-Z]", "");
+            tag.append(mood.substring(0, 1).toUpperCase()).append(mood.substring(1).toLowerCase());
+        }
+
+        return tag.toString().toLowerCase();
     }
 
 
     public static String generateTagInsert() {
         return String.format("""
-                INSERT INTO tags ( name )
-                    VALUES ( '%s' );
+                INSERT INTO tags ( name ) VALUES ( '%s' );
                 """, randomHashtag());
     }
 
     public static String generatePostTagsInsert(int postId, int tagId) {
         return String.format("""
-                INSERT INTO post_tags ( post_id, tag_id )
-                    VALUES ( %d, %d );
+                INSERT INTO post_tags ( post_id, tag_id ) VALUES ( %d, %d );
                 """, postId, tagId);
     }
 
     public static String generateFollowsInsert(int followerId, int followeeId) {
         return String.format("""
-                INSERT INTO follows ( follower_id, followee_id )
-                    VALUES ( %d, %d );
+                INSERT INTO follows ( follower_id, followee_id ) VALUES ( %d, %d );
                 """, followerId, followeeId);
     }
 
