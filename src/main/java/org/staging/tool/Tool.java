@@ -21,7 +21,22 @@ public class Tool {
         String fullName = firstName + " " + lastName;
         String domain = faker.internet().domainName();
         String email = baseUsername + "@" + domain;
-        String bio = faker.yoda().quote();
+        String bio = switch (random.nextInt(12)) {
+            case 0 -> faker.chuckNorris().fact();
+            case 1 -> faker.superhero().descriptor();
+            case 2 -> faker.yoda().quote();
+            case 3 -> faker.howIMetYourMother().quote();
+            case 4 -> faker.harryPotter().quote();
+            case 5 -> faker.funnyName().name();
+            case 6 -> faker.elderScrolls().quote();
+            case 7 -> faker.gameOfThrones().quote();
+            case 8 -> faker.lebowski().quote();
+            case 9 -> faker.witcher().quote();
+            case 10 -> faker.rickAndMorty().quote();
+            default -> faker.leagueOfLegends().quote();
+        };
+
+                faker.yoda().quote();
 
         return String.format("""
                         INSERT INTO users ( username, full_name, email, bio ) VALUES ( '%s', '%s', '%s', '%s' );
