@@ -96,7 +96,7 @@ public class Tool {
 
         // randomly add a “mood” or “energy” suffix
         if (random.nextDouble() < 0.3) {
-            String mood = faker.expression("#{word.noun}").replaceAll("[^a-zA-Z]", "");
+            String mood = faker.lorem().word().replaceAll("[^a-zA-Z]", "");
             tag.append(mood.substring(0, 1).toUpperCase()).append(mood.substring(1).toLowerCase());
         }
 

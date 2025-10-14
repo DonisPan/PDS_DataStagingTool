@@ -32,12 +32,12 @@ public class Generator {
     }
 
     public void generate() throws IOException {
-        measure("generateUsers", this::generateUsers);
-        measure("generatePosts", this::generatePosts);
-        measure("generateMediaForPost", this::generateMediaForPost);
+//        measure("generateUsers", this::generateUsers);
+//        measure("generatePosts", this::generatePosts);
+//        measure("generateMediaForPost", this::generateMediaForPost);
         measure("generateTags", this::generateTags);
-        measure("generatePostTags", this::generatePostTags);
-        measure("generateReactions", this::generateReactions);
+//        measure("generatePostTags", this::generatePostTags);
+//        measure("generateReactions", this::generateReactions);
     }
 
 
@@ -192,21 +192,6 @@ public class Generator {
             System.out.println("\n[PostTags] Done!");
         }
     }
-
-//    private void generatePostTags() throws IOException {
-//        File f = makeFile("PostTags");
-//        FileWriter fw = new FileWriter(f, true);
-//
-//        for (int i = 0; i < POSTS_COUNT; i++) {
-//            for (int j = 0; j < TAG_COUNT; j++) {
-//                if (RANDOM.nextInt() < 0.00001) {
-//                    fw.append(generatePostTagsInsert(i, j));
-//                }
-//            }
-//        }
-//
-//        fw.close();
-//    }
 
     private int generateUserId() {
         return RANDOM.nextInt(USERS_COUNT) + 1;
