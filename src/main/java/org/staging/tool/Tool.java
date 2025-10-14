@@ -83,19 +83,24 @@ public class Tool {
     private static String randomHashtag() {
         StringBuilder tag = new StringBuilder("#");
 
-        switch (random.nextInt(8)) { // pick random theme
+        switch (random.nextInt(15)) {
             case 0 -> tag.append(faker.chuckNorris().fact().split(" ")[0]);
             case 1 -> tag.append(faker.superhero().name().replaceAll("\\s+", ""));
             case 2 -> tag.append(faker.animal().name().replaceAll("\\s+", ""));
             case 3 -> tag.append(faker.beer().name().replaceAll("\\s+", ""));
-            case 4 -> tag.append(faker.programmingLanguage().name().replaceAll("\\s+", ""));
-            case 5 -> tag.append(faker.space().planet().replaceAll("\\s+", ""));
-            case 6 -> tag.append(faker.music().genre().replaceAll("\\s+", ""));
+            case 4 -> tag.append(faker.space().planet().replaceAll("\\s+", ""));
+            case 5 -> tag.append(faker.music().genre().replaceAll("\\s+", ""));
+            case 6 -> tag.append(faker.ancient().hero().replaceAll("\\s+", ""));
+            case 7 -> tag.append(faker.ancient().god().replaceAll("\\s+", ""));
+            case 9 -> tag.append(faker.ancient().primordial().replaceAll("\\s+", ""));
+            case 10 -> tag.append(faker.book().genre().replaceAll("\\s+", ""));
+            case 11 -> tag.append(faker.backToTheFuture().character().replaceAll("\\s+", ""));
+            case 12 -> tag.append(faker.color().name().replaceAll("\\s+", ""));
+            case 13 -> tag.append(faker.aquaTeenHungerForce().character().replaceAll("\\s+", ""));
             default -> tag.append(faker.food().dish().replaceAll("\\s+", ""));
         }
 
-        // randomly add a “mood” or “energy” suffix
-        if (random.nextDouble() < 0.3) {
+        if (random.nextDouble() < 0.8) {
             String mood = faker.lorem().word().replaceAll("[^a-zA-Z]", "");
             tag.append(mood.substring(0, 1).toUpperCase()).append(mood.substring(1).toLowerCase());
         }
