@@ -22,7 +22,7 @@ public class Generator {
 
     private final Random RANDOM = new Random();
 
-    private final int USERS_COUNT = 100_000;
+    private final int USERS_COUNT = 100;
     private final int POSTS_COUNT = 500_000;
     private final int TAG_COUNT = 150_000;
 
@@ -32,10 +32,10 @@ public class Generator {
     }
 
     public void generate() throws IOException {
-//        measure("generateUsers", this::generateUsers);
+        measure("generateUsers", this::generateUsers);
 //        measure("generatePosts", this::generatePosts);
 //        measure("generateMediaForPost", this::generateMediaForPost);
-        measure("generateTags", this::generateTags);
+//        measure("generateTags", this::generateTags);
 //        measure("generatePostTags", this::generatePostTags);
 //        measure("generateReactions", this::generateReactions);
     }

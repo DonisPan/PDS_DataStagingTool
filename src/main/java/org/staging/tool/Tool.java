@@ -2,6 +2,7 @@ package org.staging.tool;
 
 import com.github.javafaker.Faker;
 
+import java.time.LocalDate;
 import java.util.Locale;
 import java.util.Random;
 
@@ -13,10 +14,17 @@ public class Tool {
         String firstName = faker.name().firstName();
         String lastName = faker.name().lastName();
 
-        String baseUsername = (firstName.charAt(0) + lastName).toLowerCase().replaceAll("[^a-z]", "");
-        if (random.nextBoolean()) {
-            baseUsername += random.nextInt(100);
-        }
+        String firstPart = firstName.length() >= 2
+                ? firstName.substring(0, 2)
+                : firstName;
+
+        String baseUsername = (firstPart + lastName)
+                .toLowerCase()
+                .replaceAll("[^a-z]", "");
+
+        String suffix = faker.letterify("???") + faker.numerify("#####");
+
+        String username = baseUsername + suffix;
 
         String fullName = firstName + " " + lastName;
         String domain = faker.internet().domainName();
@@ -36,15 +44,13 @@ public class Tool {
             default -> faker.leagueOfLegends().quote();
         };
 
-                faker.yoda().quote();
-
         return String.format("""
                         INSERT INTO users ( username, full_name, email, bio ) VALUES ( '%s', '%s', '%s', '%s' );
                         """,
-                escape(baseUsername),
-                escape(fullName),
-                escape(email),
-                escape(bio));
+                escape(escapeWeirdChars(username)),
+                escape(escapeWeirdChars(fullName)),
+                escape(escapeWeirdChars(email)),
+                escape(escapeWeirdChars(bio)));
     }
 
     public static String generatePostInsert(int authorId, int replyTo) {
@@ -144,5 +150,21 @@ public class Tool {
 
     private static String escape(String text) {
         return text.replace("'", "''");
+    }
+
+    private static String escapeWeirdChars(String input) {
+        if (input == null) return "";
+
+        // 1️⃣ Normalize newlines and tabs
+        String escaped = input
+                .replaceAll("[\\r\\n\\t]+", " ");
+
+        // 2️⃣ Remove dangerous characters (single/double quotes, slashes, backslashes)
+        escaped = escaped.replaceAll("[\"'\\\\/]", "");
+
+        // 3️⃣ Trim spaces and collapse multiple spaces into one
+        escaped = escaped.trim().replaceAll("\\s{2,}", " ");
+
+        return escaped;
     }
 }
