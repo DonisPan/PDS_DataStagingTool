@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.Random;
 
 import static org.staging.tool.Tool.*;
@@ -20,9 +21,9 @@ import static org.staging.tool.Tool.*;
 
 public class Generator {
 
-    private final Random RANDOM = new Random();
+    private final Random RANDOM = new Random(1);
 
-    private final int USERS_COUNT = 100;
+    private final int USERS_COUNT = 500_000;
     private final int POSTS_COUNT = 500_000;
     private final int TAG_COUNT = 150_000;
 
@@ -61,10 +62,18 @@ public class Generator {
     }
 
     private void generateUsers() throws IOException {
-        File f = makeFile("Users");
+        int fileN = 1;
+        File f = makeFile("Users" + fileN);
         FileWriter fw = new FileWriter(f, true);
 
         for (int i = 0; i < USERS_COUNT; i++) {
+//            if (i != 0 && i % 2000 == 0) {
+//                fileN++;
+//                fw.append("commit;");
+//                fw.close();
+//                f = makeFile("Users" + fileN);
+//                fw = new FileWriter(f, true);
+//            }
             fw.append(generateUserInsert());
         }
 

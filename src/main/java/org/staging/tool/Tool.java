@@ -3,12 +3,15 @@ package org.staging.tool;
 import com.github.javafaker.Faker;
 
 import java.time.LocalDate;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Random;
 
 public class Tool {
     private static final Random random = new Random();
     private static final Faker faker = new Faker(new Locale("en"), random);
+
+    private static HashSet<String> usernames = new HashSet<>();
 
     public static String generateUserInsert() {
         String firstName = faker.name().firstName();
@@ -18,17 +21,21 @@ public class Tool {
                 ? firstName.substring(0, 2)
                 : firstName;
 
-        String baseUsername = (firstPart + lastName)
-                .toLowerCase()
-                .replaceAll("[^a-z]", "");
+        String username = "";
+        String baseUsername = "";
+        while (!usernames.contains(username)) {
+            baseUsername = (firstPart + lastName)
+                    .toLowerCase()
+                    .replaceAll("[^a-z]", "");
 
-        String suffix = faker.letterify("???") + faker.numerify("#####");
-
-        String username = baseUsername + suffix;
+            String suffix = faker.letterify("???") + faker.numerify("#####");
+            username = baseUsername + suffix;
+            usernames.add(username);
+        }
 
         String fullName = firstName + " " + lastName;
         String domain = faker.internet().domainName();
-        String email = baseUsername + "@" + domain;
+        String email = username + "@" + domain;
         String bio = switch (random.nextInt(12)) {
             case 0 -> faker.chuckNorris().fact();
             case 1 -> faker.superhero().descriptor();
@@ -61,7 +68,7 @@ public class Tool {
                     """, authorId, escape(body));
         } else {
             return String.format("""
-                    INSERT INTO posts ( author_id, body, reply_to_id ) VALUES ( %d, '%s', %d );
+                    INSERT INTO posts ( author_id, body, reply_to_id ) VALUES ( %d, %d, '%s', %d );
                     """, authorId, escape(body), replyTo);
         }
     }
@@ -155,14 +162,11 @@ public class Tool {
     private static String escapeWeirdChars(String input) {
         if (input == null) return "";
 
-        // 1️⃣ Normalize newlines and tabs
         String escaped = input
                 .replaceAll("[\\r\\n\\t]+", " ");
 
-        // 2️⃣ Remove dangerous characters (single/double quotes, slashes, backslashes)
         escaped = escaped.replaceAll("[\"'\\\\/]", "");
 
-        // 3️⃣ Trim spaces and collapse multiple spaces into one
         escaped = escaped.trim().replaceAll("\\s{2,}", " ");
 
         return escaped;
