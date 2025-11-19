@@ -8,6 +8,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Random;
+import java.util.Set;
 
 import static org.staging.tool.Tool.*;
 
@@ -23,9 +24,12 @@ public class Generator {
 
     private final Random RANDOM = new Random(1);
 
-    private final int USERS_COUNT = 500_000;
-    private final int POSTS_COUNT = 500_000;
-    private final int TAG_COUNT = 150_000;
+    private final int USERS_COUNT = 200_000;
+    private final int POSTS_COUNT = 400_000;
+    private final int TAG_COUNT = 1000;
+    private final int POST_TAGS_MAX = 300_000;
+    private final int REACTIONS_MAX = 400_000;
+    private final int FOLLOWS_COUNT = 100_000;
 
     @FunctionalInterface
     interface IOAction {
@@ -34,20 +38,20 @@ public class Generator {
 
     public void generate() throws IOException {
         measure("generateUsers", this::generateUsers);
-//        measure("generatePosts", this::generatePosts);
-//        measure("generateMediaForPost", this::generateMediaForPost);
-//        measure("generateTags", this::generateTags);
-//        measure("generatePostTags", this::generatePostTags);
-//        measure("generateReactions", this::generateReactions);
+        measure("generatePosts", this::generatePosts);
+        measure("generateMediaForPost", this::generateMediaForPost);
+        measure("generateTags", this::generateTags);
+        measure("generatePostTags", this::generatePostTags);
+        measure("generateReactions", this::generateReactions);
+        measure("generateFollows", this::generateFollows);
     }
-
 
     private void measure(String label, IOAction action) throws IOException {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
         System.out.println("\n[" + LocalTime.now().format(fmt) + "] Starting " + label + "...");
 
         long start = System.nanoTime();
-        action.run();  // allowed to throw IOException
+        action.run();
         long end = System.nanoTime();
 
         double seconds = (end - start) / 1_000_000_000.0;
@@ -62,38 +66,55 @@ public class Generator {
     }
 
     private void generateUsers() throws IOException {
-        int fileN = 1;
-        File f = makeFile("Users" + fileN);
+        File f = makeFile("Users");
         FileWriter fw = new FileWriter(f, true);
 
         for (int i = 0; i < USERS_COUNT; i++) {
-//            if (i != 0 && i % 2000 == 0) {
-//                fileN++;
-//                fw.append("commit;");
-//                fw.close();
-//                f = makeFile("Users" + fileN);
-//                fw = new FileWriter(f, true);
+            if (i != 0 && i % 10000 == 0) {
+                fw.append("commit;");
+            }
+
+            if (i <= 1000) {
+                fw.append(generateUserInsert(true));
+            } else {
+                fw.append(generateUserInsert(false));
+            }
+
+//            if (i == 0) {
+//                break;
 //            }
-            fw.append(generateUserInsert());
         }
 
         fw.close();
     }
 
     private void generatePosts() throws IOException {
-        File f = makeFile("Posts");
+        File f = makeFile("Posts1");
         FileWriter fw = new FileWriter(f, true);
+
+        int fileN = 2;
 
         int postsCount = (int) (POSTS_COUNT * 0.5);
         int replyCount = (int) (POSTS_COUNT * 0.3);
 
         for (int i = 0; i < POSTS_COUNT; i++) {
+            if (i != 0 && i % 200_000 == 0) {
+                fw.close();
+                f = makeFile("Posts" + fileN);
+                fw = new FileWriter(f, true);
+            }
+
+            // TODO BAD GENERATION OF REPLIES
             if (i < postsCount) {
                 fw.append(generatePostInsert(generateUserId(), 0));
             } else if (i < replyCount + postsCount) {
                 fw.append(generatePostInsert(generateUserId(), generatePostId(postsCount, replyCount + postsCount)));
             } else {
                 fw.append(generatePostInsert(generateUserId(), generatePostId(replyCount + postsCount, POSTS_COUNT)));
+            }
+
+            if (i != 0 && i % 10000 == 0) {
+                fw.append("commit;");
             }
         }
 
@@ -107,48 +128,71 @@ public class Generator {
         int mediaCount = (int) (POSTS_COUNT * 0.25);
 
         for (int i = 0; i < mediaCount; i++) {
-            fw.append(generateMediaInsert(generatePostId(1, mediaCount)));
+
+            if (i < 1000) {
+                fw.append(generateMediaInsert(generatePostId(1, mediaCount), true));
+            } else {
+                fw.append(generateMediaInsert(generatePostId(1, mediaCount), false));
+            }
+
+            if (i != 0 && i % 10000 == 0) {
+                fw.append("commit;");
+            }
         }
 
         fw.close();
     }
 
     private void generateReactions() throws IOException {
-        File f = makeFile("Reactions");
+        File f = makeFile("Reactions1");
+        FileWriter fw = new FileWriter(f, true);
 
-        try (BufferedWriter fw = new BufferedWriter(new FileWriter(f, true), 1 << 16)) {
+        long total = (long) POSTS_COUNT * USERS_COUNT;
+        long processed = 0;
+        long lastPrint = 0;
+        long rows = 0;
+        int fileN = 2;
 
-            StringBuilder sb = new StringBuilder(1 << 18);
+        for (int i = 1; i <= POSTS_COUNT; i++) {
+            for (int j = 1; j <= USERS_COUNT; j++) {
 
-            long total = (long) POSTS_COUNT * USERS_COUNT;
-            long processed = 0;
-            long lastPrint = 0;
+                if (rows != 0 && rows % 200_000 == 0) {
+                    fw.flush();
+                    fw.close();
+                    f = makeFile("Reactions" + fileN);
+                    fw = new FileWriter(f, true);
+                }
 
-            for (int i = 1; i <= POSTS_COUNT; i++) {
-                for (int j = 1; j <= USERS_COUNT; j++) {
+                if (RANDOM.nextDouble() < 0.5 && RANDOM.nextDouble() < 0.7) {
+                    fw.write(generateReactionInsert(j, i));
+                    rows++;
+                }
 
-                    if (RANDOM.nextDouble() < 0.5 && RANDOM.nextDouble() < 0.7) {
-                        sb.append(generateReactionInsert(j, i));
-                    }
+                if (rows != 0 && rows % 10000 == 0) {
+                    fw.write("commit;");
+                }
 
-                    if (sb.length() > 1_000_000) {
-                        fw.write(sb.toString());
-                        sb.setLength(0);
-                    }
+                processed++;
+                if (processed - lastPrint >= total / 200) {
+                    double percent = (processed * 100.0) / total;
+                    System.out.printf("\rProgress: %.2f%% (%d/%d) ROWS [%d]", percent, i, POSTS_COUNT, rows);
+                    System.out.flush();
+                    lastPrint = processed;
+                }
 
-                    processed++;
-                    if (processed - lastPrint >= total / 200) {
-                        double percent = (processed * 100.0) / total;
-                        System.out.printf("\rProgress: %.2f%% (%d/%d)", percent, i, POSTS_COUNT);
-                        System.out.flush();
-                        lastPrint = processed;
-                    }
+                if (rows >= REACTIONS_MAX) {
+                    fw.flush();
+                    fw.close();
+                    System.out.println("\n[PostTags] Done!");
+                    return;
                 }
             }
-
-            if (!sb.isEmpty()) fw.write(sb.toString());
-            System.out.println("\nDone!");
         }
+
+        fw.flush();
+        fw.close();
+
+        System.out.println("\nDone!");
     }
 
     private void generateTags() throws IOException {
@@ -163,43 +207,91 @@ public class Generator {
     }
 
     private void generatePostTags() throws IOException {
-        File f = makeFile("PostTags");
+        File f = makeFile("PostTags1");
+        FileWriter fw = new FileWriter(f, true);
 
-        try (BufferedWriter fw = new BufferedWriter(new FileWriter(f, true), 1 << 16)) {
+        long total = (long) POSTS_COUNT * TAG_COUNT;
+        long processed = 0;
+        long lastPrint = 0;
+        long rows = 0;
+        int fileN = 2;
 
-            StringBuilder sb = new StringBuilder(1 << 18);
+        for (int i = 0; i < POSTS_COUNT; i++) {
+            for (int j = 0; j < TAG_COUNT; j++) {
 
-            long total = (long) POSTS_COUNT * TAG_COUNT;
-            long processed = 0;
-            long lastPrint = 0;
+                if (rows != 0 && rows % 200_000 == 0) {
+                    fw.flush();
+                    fw.close();
+                    f = makeFile("PostTags" + fileN);
+                    fw = new FileWriter(f, true);
+                }
 
-            for (int i = 0; i < POSTS_COUNT; i++) {
-                for (int j = 0; j < TAG_COUNT; j++) {
+                if (RANDOM.nextDouble() < 0.001) {
+                    fw.write(generatePostTagsInsert(i, j));
+                    rows++;
+                }
 
-                    if (RANDOM.nextDouble() < 0.00001) {
-                        sb.append(generatePostTagsInsert(i, j));
-                    }
+                processed++;
 
-                    processed++;
+                if (rows != 0 && rows % 10000 == 0) {
+                    fw.write("commit;");
+                }
 
-                    if (sb.length() > 1_000_000) {
-                        fw.write(sb.toString());
-                        sb.setLength(0);
-                    }
+                if (processed - lastPrint >= total / 200) {
+                    double percent = (processed * 100.0) / total;
+                    System.out.printf("\r[PostTags] %.2f%% (%d/%d posts) ROWS [%d]", percent, i + 1, POSTS_COUNT, rows);
+                    System.out.flush();
+                    lastPrint = processed;
+                }
 
-                    if (processed - lastPrint >= total / 200) {
-                        double percent = (processed * 100.0) / total;
-                        System.out.printf("\r[PostTags] %.2f%% (%d/%d posts)", percent, i + 1, POSTS_COUNT);
-                        System.out.flush();
-                        lastPrint = processed;
+                if (rows >= POST_TAGS_MAX) {
+                    fw.flush();
+                    fw.close();
+                    System.out.println("\n[PostTags] Done!");
+                    return;
+                }
+            }
+        }
+
+        fw.flush();
+        fw.close();
+
+        System.out.println("\n[PostTags] Done!");
+    }
+
+    private void generateFollows() throws IOException {
+        File f = makeFile("Follows");
+        FileWriter fw = new FileWriter(f, true);
+
+        Random r = new Random();
+        Set<String> usedPairs = new HashSet<>();
+
+        for (int i = 0; i < FOLLOWS_COUNT; i++) {
+            int followerId;
+            int followeeId;
+
+            while (true) {
+                followerId = r.nextInt(USERS_COUNT) + 1;
+                followeeId = r.nextInt(USERS_COUNT) + 1;
+
+                if (followerId != followeeId) {
+                    String key = followerId + "-" + followeeId;
+                    if (!usedPairs.contains(key)) {
+                        usedPairs.add(key);
+                        break;
                     }
                 }
             }
 
-            if (!sb.isEmpty()) fw.write(sb.toString());
+            fw.write(generateFollowsInsert(followerId, followeeId));
 
-            System.out.println("\n[PostTags] Done!");
+            if (i != 0 && i % 10000 == 0) {
+                fw.write("commit;");
+            }
         }
+
+        fw.close();
+        System.out.println("\n[Follows] Done!");
     }
 
     private int generateUserId() {

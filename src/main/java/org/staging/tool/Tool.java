@@ -1,8 +1,14 @@
 package org.staging.tool;
 
 import com.github.javafaker.Faker;
+import org.staging.tool.data.JsonMeta;
+import org.staging.tool.data.UserSettings;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Random;
@@ -13,9 +19,14 @@ public class Tool {
 
     private static HashSet<String> usernames = new HashSet<>();
 
-    public static String generateUserInsert() {
+    public static String generateUserInsert(boolean photoAllowed) throws IOException {
         String firstName = faker.name().firstName();
         String lastName = faker.name().lastName();
+
+        String fileHex = "EMPTY_BLOB()";
+        if (photoAllowed) {
+            fileHex = "HEXTORAW('" + fileToHex(new File("./photo/vtak2.jpg")) + "')";
+        }
 
         String firstPart = firstName.length() >= 2
                 ? firstName.substring(0, 2)
@@ -51,29 +62,63 @@ public class Tool {
             default -> faker.leagueOfLegends().quote();
         };
 
-        return String.format("""
-                        INSERT INTO users ( username, full_name, email, bio ) VALUES ( '%s', '%s', '%s', '%s' );
-                        """,
+
+        String address = faker.address().streetAddress();
+        String birthdaySql = "DATE '" + faker.date().birthday(18, 90).toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .toString() + "'";
+        int isPrivate = random.nextBoolean() ? 1 : 0;
+        String profileObj =
+                "t_profile_obj('" +
+                        escape(address) + "', " +
+                        birthdaySql + ", " +
+                        isPrivate +
+                        ")";
+        String settings = generateUserSettings().toString();
+
+        return String.format(
+                "INSERT INTO x_users (username, full_name, email, bio, profile_picture, profile_obj, settings) " +
+                        "VALUES ('%s','%s','%s','%s', %s, %s, '%s');\n",
                 escape(escapeWeirdChars(username)),
                 escape(escapeWeirdChars(fullName)),
                 escape(escapeWeirdChars(email)),
-                escape(escapeWeirdChars(bio)));
+                escape(escapeWeirdChars(bio)),
+                fileHex,
+                profileObj,
+                settings
+        );
+
     }
 
     public static String generatePostInsert(int authorId, int replyTo) {
         String body = faker.lorem().paragraph();
+
+        LocalDate baseDate = faker.date().birthday(0, 5).toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+
+        String createdAt = "DATE '" + baseDate.toString() + "'";
+        String updatedAt = createdAt;
+
+        if (random.nextDouble() < 0.5) {
+            updatedAt = "DATE '" + baseDate.plusDays(random.nextInt(360)).toString() + "'";
+        }
+
+        String json = generate().toString();
+
         if (replyTo == 0) {
             return String.format("""
-                    INSERT INTO posts ( author_id, body ) VALUES ( %d, '%s' );
-                    """, authorId, escape(body));
+                    INSERT INTO x_posts ( author_id, body, json_meta, created_at, updated_at ) VALUES ( %d, '%s', '%s', %s, %s );
+                    """, authorId, escape(body), json, createdAt, updatedAt);
         } else {
             return String.format("""
-                    INSERT INTO posts ( author_id, body, reply_to_id ) VALUES ( %d, %d, '%s', %d );
-                    """, authorId, escape(body), replyTo);
+                    INSERT INTO x_posts ( author_id, body, reply_to_id, json_meta, created_at, updated_at ) VALUES ( %d, '%s', %d, '%s', %s, %s );
+                    """, authorId, escape(body), replyTo, json, createdAt, updatedAt);
         }
     }
 
-    public static String generateMediaInsert(int postId) {
+    public static String generateMediaInsert(int postId, boolean binAllowed) throws IOException {
         String[] mimeTypes = {
                 "image/jpeg",
                 "image/png",
@@ -88,24 +133,42 @@ public class Tool {
             caption = caption.substring(0, 239);
         }
 
+        String fileHex = "EMPTY_BLOB()";
+        if (binAllowed) {
+            fileHex = "HEXTORAW('" + fileToHex(new File("./photo/1kb.wav")) + "')";
+        }
+
+        String date = "DATE '" + faker.date().birthday(0, 5).toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .toString() + "'";
+
         return String.format("""
-                        INSERT INTO media ( post_id, mime_type, caption ) VALUES ( %d, '%s', '%s' );
+                        INSERT INTO x_media ( post_id, mime_type, bin_data, caption, created_at ) VALUES ( %d, '%s', %s, '%s', %s );
                         """,
                 postId,
                 escape(mimeType),
-                escape(caption));
+                fileHex,
+                escape(caption),
+                date);
     }
 
     public static String generateReactionInsert(int userId, int postId) {
         String[] types = {"like", "love", "smile", "cry", "share"};
         String type = types[random.nextInt(types.length)];
 
+        String date = "DATE '" + faker.date().birthday(0, 5).toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .toString() + "'";
+
         return String.format("""
-                        INSERT INTO reactions ( user_id, post_id, type ) VALUES ( %d, %d, '%s' );
+                        INSERT INTO x_reactions ( user_id, post_id, type, created_at ) VALUES ( %d, %d, '%s', %s );
                         """,
                 userId,
                 postId,
-                type);
+                type,
+                date);
     }
 
     private static String randomHashtag() {
@@ -139,20 +202,25 @@ public class Tool {
 
     public static String generateTagInsert() {
         return String.format("""
-                INSERT INTO tags ( name ) VALUES ( '%s' );
+                INSERT INTO x_tags ( name ) VALUES ( '%s' );
                 """, randomHashtag());
     }
 
     public static String generatePostTagsInsert(int postId, int tagId) {
         return String.format("""
-                INSERT INTO post_tags ( post_id, tag_id ) VALUES ( %d, %d );
+                INSERT INTO x_post_tags ( post_id, tag_id ) VALUES ( %d, %d );
                 """, postId, tagId);
     }
 
     public static String generateFollowsInsert(int followerId, int followeeId) {
+        String date = "DATE '" + faker.date().birthday(0, 5).toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .toString() + "'";
+
         return String.format("""
-                INSERT INTO follows ( follower_id, followee_id ) VALUES ( %d, %d );
-                """, followerId, followeeId);
+                INSERT INTO x_follows ( follower_id, followee_id, created_at ) VALUES ( %d, %d, %s );
+                """, followerId, followeeId, date);
     }
 
     private static String escape(String text) {
@@ -170,5 +238,76 @@ public class Tool {
         escaped = escaped.trim().replaceAll("\\s{2,}", " ");
 
         return escaped;
+    }
+
+    public static String fileToHex(File file) throws IOException {
+        FileInputStream fis = new FileInputStream(file);
+        byte[] bytes = fis.readAllBytes();
+        fis.close();
+
+        StringBuilder sb = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            sb.append(String.format("%02X", b));
+        }
+        return sb.toString();
+    }
+
+    public static UserSettings generateUserSettings() {
+        UserSettings s = new UserSettings();
+
+        String[] visibility = {"public", "private", "followers"};
+        String[] messages = {"everyone", "followers", "none"};
+        String[] themes = {"light", "dark"};
+        String[] languages = {"en", "sk", "de", "cz"};
+
+        s.setProfileVisibility(pick(visibility));
+        s.setMessagesFrom(pick(messages));
+        s.setTheme(pick(themes));
+        s.setLanguage(pick(languages));
+
+        s.setShowOnline(random.nextBoolean());
+        s.setNotifyLikes(random.nextBoolean());
+        s.setNotifyComments(random.nextBoolean());
+        s.setNotifyFollows(random.nextBoolean());
+        s.setTwoFactor(random.nextBoolean());
+        s.setSensitiveContent(random.nextBoolean());
+
+        return s;
+    }
+
+    private static String pick(String[] arr) {
+        return arr[random.nextInt(arr.length)];
+    }
+
+    public static JsonMeta generate() {
+        JsonMeta meta = new JsonMeta();
+
+        String[] devices = {"desktop", "mobile", "tablet"};
+        String[] countries = {"SK", "CZ", "AT", "DE", "PL"};
+        String[] userAgents = {
+                "Mozilla/5.0 (Windows NT 10.0)",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X)",
+                "Mozilla/5.0 (Linux; Android 11)",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0)",
+                "Mozilla/5.0 (iPad; CPU OS 14_5)"
+        };
+
+        meta.device = pick(devices);
+        meta.ipAddress = randomIp();
+        meta.country = pick(countries);
+        meta.userAgent = pick(userAgents);
+        meta.timestamp = '"' + faker.date().birthday(0, 5).toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .toString() + '"';
+
+        return meta;
+    }
+
+    private static String randomIp() {
+        return random.nextInt(256) + "." +
+                random.nextInt(256) + "." +
+                random.nextInt(256) + "." +
+                random.nextInt(256);
     }
 }

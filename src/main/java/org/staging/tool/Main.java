@@ -7,4 +7,7 @@ public class Main {
         Generator generator = new Generator();
         generator.generate();
     }
+
+    // TODO TAGS NO UNIQUE TAG
+    // TODO BAD GENERATION OF REPLIES
 }
