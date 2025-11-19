@@ -9,9 +9,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Random;
+import java.util.*;
 
 public class Tool {
     private static final Random random = new Random();
@@ -171,34 +169,47 @@ public class Tool {
                 date);
     }
 
+    private static Set<String> hashTags = new HashSet<>();
+    private static final int MAX_TRIES = 20;
+
     private static String randomHashtag() {
-        StringBuilder tag = new StringBuilder("#");
+        for (int attempt = 0; attempt < MAX_TRIES; attempt++) {
+            StringBuilder tag = new StringBuilder("#");
 
-        switch (random.nextInt(15)) {
-            case 0 -> tag.append(faker.chuckNorris().fact().split(" ")[0]);
-            case 1 -> tag.append(faker.superhero().name().replaceAll("\\s+", ""));
-            case 2 -> tag.append(faker.animal().name().replaceAll("\\s+", ""));
-            case 3 -> tag.append(faker.beer().name().replaceAll("\\s+", ""));
-            case 4 -> tag.append(faker.space().planet().replaceAll("\\s+", ""));
-            case 5 -> tag.append(faker.music().genre().replaceAll("\\s+", ""));
-            case 6 -> tag.append(faker.ancient().hero().replaceAll("\\s+", ""));
-            case 7 -> tag.append(faker.ancient().god().replaceAll("\\s+", ""));
-            case 9 -> tag.append(faker.ancient().primordial().replaceAll("\\s+", ""));
-            case 10 -> tag.append(faker.book().genre().replaceAll("\\s+", ""));
-            case 11 -> tag.append(faker.backToTheFuture().character().replaceAll("\\s+", ""));
-            case 12 -> tag.append(faker.color().name().replaceAll("\\s+", ""));
-            case 13 -> tag.append(faker.aquaTeenHungerForce().character().replaceAll("\\s+", ""));
-            default -> tag.append(faker.food().dish().replaceAll("\\s+", ""));
+            switch (random.nextInt(15)) {
+                case 0 -> tag.append(faker.chuckNorris().fact().split(" ")[0]);
+                case 1 -> tag.append(faker.superhero().name().replaceAll("\\s+", ""));
+                case 2 -> tag.append(faker.animal().name().replaceAll("\\s+", ""));
+                case 3 -> tag.append(faker.beer().name().replaceAll("\\s+", ""));
+                case 4 -> tag.append(faker.space().planet().replaceAll("\\s+", ""));
+                case 5 -> tag.append(faker.music().genre().replaceAll("\\s+", ""));
+                case 6 -> tag.append(faker.ancient().hero().replaceAll("\\s+", ""));
+                case 7 -> tag.append(faker.ancient().god().replaceAll("\\s+", ""));
+                case 9 -> tag.append(faker.ancient().primordial().replaceAll("\\s+", ""));
+                case 10 -> tag.append(faker.book().genre().replaceAll("\\s+", ""));
+                case 11 -> tag.append(faker.backToTheFuture().character().replaceAll("\\s+", ""));
+                case 12 -> tag.append(faker.color().name().replaceAll("\\s+", ""));
+                case 13 -> tag.append(faker.aquaTeenHungerForce().character().replaceAll("\\s+", ""));
+                default -> tag.append(faker.food().dish().replaceAll("\\s+", ""));
+            }
+
+            if (random.nextDouble() < 0.8) {
+                String mood = faker.lorem().word().replaceAll("[^a-zA-Z]", "");
+                if (!mood.isEmpty()) {
+                    tag.append(Character.toUpperCase(mood.charAt(0)))
+                            .append(mood.substring(1).toLowerCase());
+                }
+            }
+
+            String hashTag = tag.toString().toLowerCase();
+
+            if (hashTags.add(hashTag)) {
+                return hashTag;
+            }
         }
 
-        if (random.nextDouble() < 0.8) {
-            String mood = faker.lorem().word().replaceAll("[^a-zA-Z]", "");
-            tag.append(mood.substring(0, 1).toUpperCase()).append(mood.substring(1).toLowerCase());
-        }
-
-        return tag.toString().toLowerCase();
+        return "#default" + UUID.randomUUID().toString().substring(0, 6);
     }
-
 
     public static String generateTagInsert() {
         return String.format("""

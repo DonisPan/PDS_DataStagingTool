@@ -108,9 +108,9 @@ public class Generator {
             if (i < postsCount) {
                 fw.append(generatePostInsert(generateUserId(), 0));
             } else if (i < replyCount + postsCount) {
-                fw.append(generatePostInsert(generateUserId(), generatePostId(postsCount, replyCount + postsCount)));
+                fw.append(generatePostInsert(generateUserId(), generatePostId(1, postsCount)));
             } else {
-                fw.append(generatePostInsert(generateUserId(), generatePostId(replyCount + postsCount, POSTS_COUNT)));
+                fw.append(generatePostInsert(generateUserId(), generatePostId(postsCount, POSTS_COUNT)));
             }
 
             if (i != 0 && i % 10000 == 0) {
@@ -229,13 +229,12 @@ public class Generator {
                 if (RANDOM.nextDouble() < 0.001) {
                     fw.write(generatePostTagsInsert(i, j));
                     rows++;
+                    if (rows != 0 && rows % 10000 == 0) {
+                        fw.write("commit;");
+                    }
                 }
 
                 processed++;
-
-                if (rows != 0 && rows % 10000 == 0) {
-                    fw.write("commit;");
-                }
 
                 if (processed - lastPrint >= total / 200) {
                     double percent = (processed * 100.0) / total;
