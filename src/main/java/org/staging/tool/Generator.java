@@ -71,14 +71,14 @@ public class Generator {
 
         for (int i = 0; i < USERS_COUNT; i++) {
             if (i != 0 && i % 10000 == 0) {
-                fw.append("commit;");
+                fw.append("commit;\n");
             }
 
-            if (i <= 1000) {
+//            if (i <= 1000) {
                 fw.append(generateUserInsert(true));
-            } else {
-                fw.append(generateUserInsert(false));
-            }
+//            } else {
+//                fw.append(generateUserInsert(false));
+//            }
 
 //            if (i == 0) {
 //                break;
@@ -114,7 +114,7 @@ public class Generator {
             }
 
             if (i != 0 && i % 10000 == 0) {
-                fw.append("commit;");
+                fw.append("commit;\n");
             }
         }
 
@@ -129,14 +129,14 @@ public class Generator {
 
         for (int i = 0; i < mediaCount; i++) {
 
-            if (i < 1000) {
+//            if (i < 1000) {
                 fw.append(generateMediaInsert(generatePostId(1, mediaCount), true));
-            } else {
-                fw.append(generateMediaInsert(generatePostId(1, mediaCount), false));
-            }
+//            } else {
+//                fw.append(generateMediaInsert(generatePostId(1, mediaCount), false));
+//            }
 
             if (i != 0 && i % 10000 == 0) {
-                fw.append("commit;");
+                fw.append("commit;\n");
             }
         }
 
@@ -169,7 +169,7 @@ public class Generator {
                 }
 
                 if (rows != 0 && rows % 10000 == 0) {
-                    fw.write("commit;");
+                    fw.write("commit;\n");
                 }
 
                 processed++;
@@ -230,7 +230,7 @@ public class Generator {
                     fw.write(generatePostTagsInsert(i, j));
                     rows++;
                     if (rows != 0 && rows % 10000 == 0) {
-                        fw.write("commit;");
+                        fw.write("commit;\n");
                     }
                 }
 
@@ -285,7 +285,7 @@ public class Generator {
             fw.write(generateFollowsInsert(followerId, followeeId));
 
             if (i != 0 && i % 10000 == 0) {
-                fw.write("commit;");
+                fw.write("commit;\n");
             }
         }
 

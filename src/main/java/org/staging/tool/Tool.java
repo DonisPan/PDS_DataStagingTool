@@ -22,9 +22,9 @@ public class Tool {
         String lastName = faker.name().lastName();
 
         String fileHex = "EMPTY_BLOB()";
-        if (photoAllowed) {
-            fileHex = "HEXTORAW('" + fileToHex(new File("./photo/vtak2.jpg")) + "')";
-        }
+//        if (photoAllowed) {
+//            fileHex = "HEXTORAW('" + fileToHex(new File("./photo/vtak2.jpg")) + "')";
+//        }
 
         String firstPart = firstName.length() >= 2
                 ? firstName.substring(0, 2)
@@ -132,9 +132,9 @@ public class Tool {
         }
 
         String fileHex = "EMPTY_BLOB()";
-        if (binAllowed) {
-            fileHex = "HEXTORAW('" + fileToHex(new File("./photo/1kb.wav")) + "')";
-        }
+//        if (binAllowed) {
+//            fileHex = "HEXTORAW('" + fileToHex(new File("./photo/1kb.wav")) + "')";
+//        }
 
         String date = "DATE '" + faker.date().birthday(0, 5).toInstant()
                 .atZone(ZoneId.systemDefault())
